@@ -40,6 +40,7 @@ if ('development' == app.get('env')) {
 app.get('/', routes.index);
 app.get('/users', user.list);
 
+
 app.post("/submit" ,function(req,res){
 	var user = req.body.user;
 	var order = req.body.order;
@@ -67,6 +68,9 @@ app.post("/submit" ,function(req,res){
 app.get("/orders" ,function(req,res){
 	var orders = storage.getItem('orders');
 	res.json(orders);
+});
+app.get("/clearOrders",function(req,res){
+  storage.setItem('orders',[]);
 });
 
 var server=http.createServer(app).listen(app.get('port'), function(){

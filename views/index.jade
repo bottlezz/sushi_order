@@ -1,41 +1,49 @@
 extends layout
 
 block content
-  h1= title
-  p Welcome to #{title}
-  ul
-    each cat in menu
-      each val in cat.list
-        li
-          button(class="btn btn-xs",onclick="additem("+"'"+val.name+"',"+val.price+")") #{val.name} #{val.price}
-        
-  
-  #myorder
+  #container.container
+    h1
+      | hello world
     p 
-      enter your name and then press 'new order'
-    input(type="text",placeholder="your name",id="usernameInput")
-    button(class="btn" onclick="newOrder()") new order
-  #orders
+      | Click the tags to order (create new order first)"
+    ul
+      each cat in menu
+        each val in cat.list
+          li
+            button(class="btn btn-xs",onclick="additem("+"'"+val.name+"',"+val.price+")") #{val.name} #{val.price}
+          
+    br
+    #myorder
+      p 
+        enter your name and then press 'new order'
+      input(type="text",placeholder="your name",id="usernameInput")
+      button(class="btn" onclick="newOrder()") new order
+    br
+    #orders.jumbotron
   
   script.
     var updateorders = function(orderList){
       var str;
       for(var i=0; i<orderList.length; i++){
-        str += "<div>" + orderList[i].user + "</td><td>" + orderList[i].order[0].name + "</td></tr>";
+        str += "<div class='well'><p>" + orderList[i].user+"</p>";
+        for(var j=0;j<orderList[i].order.length;j++){
+          str+= "<span class='label label-info'>"+orderList[i].order[j].name+" "+orderList[i].order[j].price+"</span>";
+        }
+        str+="</div>";
       }
-
-      str += "</table>";
+      
       $('#orders').html(str);
     }
     var myorder=new Array();
     var username=null;
     var newOrder=function(){
+      myorder=new Array();
       if($('#usernameInput').val()==''){
         alert("please your name");
         return;
       }
       username=$('#usernameInput').val()
-      var str="<h3>"+username+"</h3><div id='orderDetail'></div>"+'<button onclick="submitOrder">Submit</button>';
+      var str="<h3>"+username+"</h3><div id='orderDetail'></div>"+'<button onclick="submitOrder()">Submit</button>';
       $('#myorder').html(str);
     }
     var additem=function(name,price){
@@ -52,7 +60,7 @@ block content
     var submitOrder = function(){
       var json = {user:username,order:myorder};
 
-      if(user && myorder){
+      if(username && myorder){
         $.ajax({
             type: 'POST',
             url: 'submit',
@@ -61,36 +69,17 @@ block content
             timeout: 2000,
             success: function(result){
                 //updateorders(result);
+                //console.log("yeah");
             }
         });
       }
     }
-    var socket =io.connect('http://localhost:3000');
+    var socket =io.connect('http://10.42.10.95:3000');
     socket.on('update',function(order){
       updateorders(order);
     });
 
-    //submit a new score
-    var verify = function(){
-      //var user = $('.user').val();
-      //var score = $('.order').val();
-       
-
-      var json = {user:username,order:myorder};
-
-      if(user && myorder){
-        $.ajax({
-            type: 'POST',
-            url: 'submit',
-            data: json,
-            dataType: "json",
-            timeout: 2000,
-            success: function(result){
-                //updateorders(result);
-            }
-        });
-      }
-    }
+   
     $.get('/orders',function(result){
       updateorders(result);
     })
