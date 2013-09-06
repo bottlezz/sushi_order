@@ -1,0 +1,96 @@
+extends layout
+
+block content
+  h1= title
+  p Welcome to #{title}
+  ul
+    each cat in menu
+      each val in cat.list
+        li
+          button(class="btn btn-xs",onclick="additem("+"'"+val.name+"',"+val.price+")") #{val.name} #{val.price}
+        
+  
+  #myorder
+    p 
+      enter your name and then press 'new order'
+    input(type="text",placeholder="your name",id="usernameInput")
+    button(class="btn" onclick="newOrder()") new order
+  #orders
+  
+  script.
+    var updateorders = function(orderList){
+      var str;
+      for(var i=0; i<orderList.length; i++){
+        str += "<div>" + orderList[i].user + "</td><td>" + orderList[i].order[0].name + "</td></tr>";
+      }
+
+      str += "</table>";
+      $('#orders').html(str);
+    }
+    var myorder=new Array();
+    var username=null;
+    var newOrder=function(){
+      if($('#usernameInput').val()==''){
+        alert("please your name");
+        return;
+      }
+      username=$('#usernameInput').val()
+      var str="<h3>"+username+"</h3><div id='orderDetail'></div>"+'<button onclick="submitOrder">Submit</button>';
+      $('#myorder').html(str);
+    }
+    var additem=function(name,price){
+      myorder.push({name:"name",price:price});
+      var str = "<ul>";
+      for(var i=0; i<myorder.length; i++){
+        str += '<li><label onclick="removeitem(' + i +')">' + name +" "+price +"</label></li>";
+      }
+
+      str += "</ul>";
+      $('#orderDetail').html(str);
+    
+    }
+    var submitOrder = function(){
+      var json = {user:username,order:myorder};
+
+      if(user && myorder){
+        $.ajax({
+            type: 'POST',
+            url: 'submit',
+            data: json,
+            dataType: "json",
+            timeout: 2000,
+            success: function(result){
+                //updateorders(result);
+            }
+        });
+      }
+    }
+    var socket =io.connect('http://localhost:3000');
+    socket.on('update',function(order){
+      updateorders(order);
+    });
+
+    //submit a new score
+    var verify = function(){
+      //var user = $('.user').val();
+      //var score = $('.order').val();
+       
+
+      var json = {user:username,order:myorder};
+
+      if(user && myorder){
+        $.ajax({
+            type: 'POST',
+            url: 'submit',
+            data: json,
+            dataType: "json",
+            timeout: 2000,
+            success: function(result){
+                //updateorders(result);
+            }
+        });
+      }
+    }
+    $.get('/orders',function(result){
+      updateorders(result);
+    })
