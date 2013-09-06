@@ -46,11 +46,12 @@ block content
       var str="<h3>"+username+"</h3><div id='orderDetail'></div>"+'<button onclick="submitOrder()">Submit</button>';
       $('#myorder').html(str);
     }
+    
     var additem=function(name,price){
-      myorder.push({name:"name",price:price});
+      myorder.push({name:name,price:price});
       var str = "<ul>";
       for(var i=0; i<myorder.length; i++){
-        str += '<li><label onclick="removeitem(' + i +')">' + name +" "+price +"</label></li>";
+        str += '<li><label onclick="removeitem({name:"'+myorder[i].name+'",price:'+myorder[i].price+'})">' + myorder[i].name +" "+myorder[i].price +"</label></li>";
       }
 
       str += "</ul>";
