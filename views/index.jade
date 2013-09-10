@@ -3,64 +3,139 @@ extends layout
 block content
   #container.container
     h1
-      | hello world
-    p 
-      | Click the tags to order (create new order first)"
-    ul
-      each cat in menu
-        each val in cat.list
+      | Sushi Orders
+    blockquote
+      small
+        | I am javascript site. Don't hack me please :)
+    
+    #menu(class="alert alert-info")
+      ul#menuTab(class="nav nav-tabs info")
+        each cat in menu
           li
-            button(class="btn btn-xs",onclick="additem("+"'"+val.name+"',"+val.price+")") #{val.name} #{val.price}
-          
+            a(href="#"+cat.catName,data-toggle="tab") #{cat.catName.replace(/_/g, " ")}
+      br
+      div.tab-content
+        each cat in menu
+          div.tab-pane(id=cat.catName)
+            ul(style="margin-bottom:20px;overflow:hidden;")
+              each val in cat.list
+                li(style="width:48%;float:left;display:inline;")
+                  button(class="btn btn-xs btn-primary",style="margin:1px",onclick="additem("+"'"+val.name+"',"+val.price+")") #{val.name} #{val.price.toFixed(2)}
+    script.
+      $('#menu').hide();
+      
+      $('#menuTab a:first').tab('show');
+      
+      $('#menuTab a').click(function(e){
+        e.preventDefault();
+        $(this).tab('show');
+      });
+      
     br
-    #myorder
+    #myorder(class="alert alert-warning")
       p 
-        enter your name and then press 'new order'
-      input(type="text",placeholder="your name",id="usernameInput")
-      button(class="btn" onclick="newOrder()") new order
+        enter your name and then press 'Create Order'
+      input(type="text",placeholder="your name",id="usernameInput" style="margin:10px")
+      br
+      button(class="btn btn-info" onclick="newOrder()" style="margin:10px") Create Order
     br
-    #orders.jumbotron
-  
+    div(class="panel panel-default")
+      div(class="panel-heading")
+        h3( class="panel-title") Orders board
+        blockquote
+          small
+            | Click your Order to edit, and x to delete.
+      #orders.panel-body
+        p 
+          | There are no Orders Yet...
+      
   script.
+  
+    //this method used to display the order board
     var updateorders = function(orderList){
-      var str;
+      var str="";
+      
       for(var i=0; i<orderList.length; i++){
-        str += "<div class='well'><p>" + orderList[i].user+"</p>";
+        var subtotal=0;
+        
+        str += '<div class="alert alert-success" onclick="editOrder('+"'"+orderList[i].user+"'"+')">';
+        str += '<button type="button" class="close" aria-hidden="true" style="margin:-10px" onclick="removeOrder('+"'"+orderList[i].user+"'"+')">&times;</button>';
+        str += "<h4>" + orderList[i].user+"</h4>";
+        
+        str += "<br><p>";
         for(var j=0;j<orderList[i].order.length;j++){
-          str+= "<span class='label label-info'>"+orderList[i].order[j].name+" "+orderList[i].order[j].price+"</span>";
+          str+= "<em style='display:inline-block;margin-right:3em'>"+orderList[i].order[j].name+" "+parseFloat(orderList[i].order[j].price).toFixed(2)+"</em>";
+          subtotal+= parseFloat(orderList[i].order[j].price);
         }
+        str += "</p><br>";
+        str += "<p><h6>Total : "+subtotal+"</h6><h6>After Tax : "+(subtotal*1.05).toFixed(2)+"</h6></p>";
         str+="</div>";
       }
-      
+      if(orderList.length==0)str="<p> There are no Orders Yet... </p> "
       $('#orders').html(str);
+       
     }
     var myorder=new Array();
     var username=null;
+    //create order
     var newOrder=function(){
-      myorder=new Array();
       if($('#usernameInput').val()==''){
         alert("please your name");
         return;
       }
-      username=$('#usernameInput').val()
-      var str="<h3>"+username+"</h3><div id='orderDetail'></div>"+'<button onclick="submitOrder()">Submit</button>';
-      $('#myorder').html(str);
+      myorder=new Array();
+      username=$('#usernameInput').val();
+      updateMyorder();
     }
-    
+    //edit order
+    var editOrder=function(u){
+      $.ajax({
+        url:'getOrder',
+        data: {username:u},
+        success: function(result){
+          myorder=result;
+          username=u;
+          updateMyorder();
+        },
+        dataType: "json"
+      });
+      
+    }
+    //remove order
+    var removeOrder=function(u){
+      console.log(u);
+      $.ajax({
+            type: 'POST',
+            url: 'removeOrder',
+            data: {username:u},
+            dataType: "json",
+            timeout: 2000,
+            success: function(result){
+              cancelOrder();
+            }
+        });
+    }
+    //add items to order
     var additem=function(name,price){
       myorder.push({name:name,price:price});
-      var str = "<ul>";
-      for(var i=0; i<myorder.length; i++){
-        str += '<li><label onclick="removeitem({name:"'+myorder[i].name+'",price:'+myorder[i].price+'})">' + myorder[i].name +" "+myorder[i].price +"</label></li>";
-      }
-
-      str += "</ul>";
-      $('#orderDetail').html(str);
+      updateOrderDetail();
+      
     
+    }
+    
+    var removeitem=function(name){
+      var index=-1; 
+      for(var i=0;i<myorder.length;i++)
+        if(myorder[i].name==name)index=i;
+      
+      if(index!=-1)
+      myorder.splice(index,1);
+      updateOrderDetail();
+      
     }
     var submitOrder = function(){
       var json = {user:username,order:myorder};
-
+      
       if(username && myorder){
         $.ajax({
             type: 'POST',
@@ -74,13 +149,46 @@ block content
             }
         });
       }
+      cancelOrder();
     }
+    var cancelOrder = function(){
+      
+      displayLogin();
+      $("#menu").hide()
+      myorder=new Array();
+      username='';
+    }
+    var updateOrderDetail=function(){
+      var str = "<ul>";
+      for(var i=0; i<myorder.length; i++){
+        str += '<li><button style="margin:3px" class="btn btn-danger btn-xs" onclick="removeitem('+"'"+myorder[i].name+"'"+')">' + myorder[i].name +" "+parseFloat(myorder[i].price).toFixed(2) +"</button></li>";
+      }
+
+      str += "</ul>";
+      $('#orderDetail').html(str);
+    }
+    var updateMyorder=function(){
+      $('#menu').show();
+      var str="<h3>"+username+"</h3><div id='orderDetail'>"+"</div>"+'<button class="btn btn-primary" style="margin:5px" onclick="submitOrder()">Submit</button>';
+      str +='<button class="btn btn-primary" style="margin:5px" onclick="removeOrder('+"'"+username+"'"+')">Remove</button>';
+      str +='<button class="btn btn-primary" style="margin:5px" onclick="cancelOrder()">Cancel</button>';
+      
+      $('#myorder').html(str);
+      updateOrderDetail();
+    }
+    var displayLogin=function(){
+      var str='<p> enter your name and then press "Create Order" </p>';
+      str+='<input type="text" placeholder="your name" id="usernameInput" style="margin:10px"/>';
+      str+='<br>';
+      str+='<button class="btn btn-info" onclick="newOrder()" style="margin:10px"> Create Order</button>';
+      $('#myorder').html(str);
+      
+    }
+    
     var socket =io.connect('http://10.42.10.95:3000');
     socket.on('update',function(order){
       updateorders(order);
     });
-
-   
     $.get('/orders',function(result){
       updateorders(result);
-    })
+    });

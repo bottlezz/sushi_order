@@ -40,14 +40,11 @@ if ('development' == app.get('env')) {
 app.get('/', routes.index);
 app.get('/users', user.list);
 
-
+//includes modify and create
 app.post("/submit" ,function(req,res){
 	var user = req.body.user;
 	var order = req.body.order;
-  
-
   var orders=storage.getItem('orders');
-  
   var index=-1;
   for(var i=0;i<orders.length;i++){
     if(orders[i].user==user)
@@ -61,11 +58,51 @@ app.post("/submit" ,function(req,res){
   //res.json(orders);
   io.sockets.emit('update',orders);
 });
-
+// remove order
+app.post("/removeOrder",function(req,res){
+  var user=req.body.username;
+  var orders=storage.getItem('orders');
+  var index=-1;
+  for(var i=0;i<orders.length;i++){
+    if(orders[i].user==user)
+      index=i;
+  }
+  if(index!=-1){
+    orders.splice(index, 1);
+    storage.setItem('orders',orders);
+    io.sockets.emit('update',orders);
+    
+    
+  }
+  
+  res.json("yeah");
+  
+});
 
 app.get("/orders" ,function(req,res){
 	var orders = storage.getItem('orders');
+  //io.sockets.emit('update',orders);
 	res.json(orders);
+});
+
+app.get('/getOrder',function(req,res){
+  var orders = storage.getItem('orders');
+  //console.log(req);
+  var user=req.query.username;
+  console.log(user);
+  var index=-1;
+  var order=new Array();
+  for(var i=0;i<orders.length;i++){
+    if(orders[i].user==user)
+      index=i;
+  }
+  if(index!=-1){
+    order=orders[index].order;
+    console.log(order);
+    
+    
+    res.json(order);
+  }
 });
 
 app.get("/clearOrders",function(req,res){
